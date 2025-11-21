@@ -1,0 +1,26 @@
+{
+  "processed_images": {
+    "f398916c-ba09-4938-bfb2-580f3ed80eb7.jpg": {
+      "original_name": "def5a28fc665006dfe81098d0678bfd8.jpg",
+      "image_id": "f398916c-ba09-4938-bfb2-580f3ed80eb7",
+      "file_id": "file-Lc7px4FbAqFehEZqLJvXMt",
+      "vector_file_id": "file-Lc7px4FbAqFehEZqLJvXMt",
+      "ocr_text": "받아들이기 힘든 현실\n"
+    },
+    "edd23ea1-0900-4336-91ff-97ed3c071b4a.webp": {
+      "original_name": "vpxuS.webp",
+      "image_id": "edd23ea1-0900-4336-91ff-97ed3c071b4a",
+      "file_id": "file-HsRmFMLsj1F1fzn8MD8XAK",
+      "vector_file_id": "file-HsRmFMLsj1F1fzn8MD8XAK",
+      "ocr_text": "짜증 잠을 자도 피로가 안 풀리냐"
+    },
+    "0453d257-852c-46ba-a349-80778c98451f.webp": {
+      "original_name": "SwdgN.webp",
+      "image_id": "0453d257-852c-46ba-a349-80778c98451f",
+      "file_id": "file-UpoG4c8jCR2tV97QoMXXXy",
+      "vector_file_id": "file-UpoG4c8jCR2tV97QoMXXXy",
+      "ocr_text": "웃지마! 우쒸..."
+    }
+  },
+  "vector_store_id": "vs_6904c4dc03c88191b7866a7e600e37d1"
+}

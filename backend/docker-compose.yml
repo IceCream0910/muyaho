@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  meme-search:
+    build: .
+    container_name: meme-search
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./images:/app/images
+      - ./processing_state.json:/app/processing_state.json
+    ports:
+      - "6666:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 1h
+      timeout: 5s
+      retries: 3
+      start_period: 20s
