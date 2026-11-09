@@ -1,0 +1,7 @@
+images/
+processing_state.json
+embedding-data/
+__pycache__/
+.env
+.env.*
+.venv/

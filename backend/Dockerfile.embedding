@@ -1,0 +1,18 @@
+FROM python:3.11-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HF_HOME=/models \
+    HF_HUB_DISABLE_TELEMETRY=1 \
+    TOKENIZERS_PARALLELISM=false \
+    OPENBLAS_NUM_THREADS=1
+
+WORKDIR /app
+
+COPY requirements-embedding.txt .
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
+        torch==2.9.0 torchvision==0.24.0 \
+    && pip install --no-cache-dir -r requirements-embedding.txt
+
+COPY embedding_api.py embedding_index.py ./
+CMD ["uvicorn", "embedding_api:app", "--host", "0.0.0.0", "--port", "8000"]

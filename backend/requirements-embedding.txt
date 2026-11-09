@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+numpy
+sentence-transformers[image]==6.2.0
+transformers==5.22.2

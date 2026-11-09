@@ -1,0 +1,20 @@
+services:
+  embedding-search:
+    build:
+      context: .
+      dockerfile: Dockerfile.embedding
+    environment:
+      EMBEDDING_CPU_THREADS: ${EMBEDDING_CPU_THREADS:-2}
+      HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-1}
+    volumes:
+      - ./images:/app/images:ro
+      - ./processing_state.json:/app/processing_state.json:ro
+      - embedding-index:/app/embedding-data
+      - embedding-model:/models
+    ports:
+      - "127.0.0.1:${EMBEDDING_PORT:-6667}:8000"
+    restart: unless-stopped
+
+volumes:
+  embedding-index:
+  embedding-model:
