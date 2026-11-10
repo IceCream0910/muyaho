@@ -5,10 +5,10 @@ from typing import List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, TypeAdapter
 import asyncio
 import shlex
-from openai import OpenAI
+import httpx
 from google import genai
 from google.genai import types
 
@@ -18,15 +18,15 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://muyaho.yuntae.in"],
     allow_credentials=True,
-    allow_methods=["https://muyaho.yuntae.in"],
-    allow_headers=["https://muyaho.yuntae.in"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 IMAGES_DIR = Path("./images")
 STATE_FILE = "./processing_state.json"
 STORE_PY_FILE = "store.py"
 
-openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+EMBEDDING_API_URL = os.getenv("EMBEDDING_API_URL", "http://embedding-search:8000").rstrip("/")
 gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 build_lock = asyncio.Lock()
@@ -41,6 +41,11 @@ class SearchQuery(BaseModel):
     query: str
     enable_semantic: bool = False
 
+class SemanticSearchQuery(SearchQuery):
+    query: str = Field(min_length=1, max_length=500)
+    limit: int = Field(default=10, ge=1, le=100)
+
+
 class SearchResult(BaseModel):
     image_id: str
     score: float
@@ -49,30 +54,35 @@ class KeywordsResponse(BaseModel):
     related_keywords: List[str]
     rewritten_query: str
 
+semantic_results = TypeAdapter(list[SearchResult])
+
+
 @app.post("/semantic_search")
-async def semantic_search(search_query: SearchQuery) -> List[SearchResult]:
-    state = load_state()
-    if not state["vector_store_id"]:
-        raise HTTPException(status_code=404, detail="Vector store not found. Please build dataset first.")
-    
-    vector_store_id = state["vector_store_id"]
-    results = openai_client.vector_stores.search(
-        vector_store_id=vector_store_id,
-        query=search_query.query,
-        max_num_results=10
-    )
-    
-    search_results = []
-    for result in results.data:
-        if hasattr(result, 'attributes') and result.attributes:
-            image_id = result.attributes.get('image_id')
-            score = getattr(result, 'score', 0.0)
-            if image_id:
-                search_results.append(SearchResult(
-                    image_id=image_id,
-                    score=score
-                ))
-    return search_results
+async def semantic_search(search_query: SemanticSearchQuery) -> List[SearchResult]:
+    query = search_query.query.strip()
+    if not query:
+        raise HTTPException(status_code=422, detail="Query must not be blank")
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=3.0), trust_env=False) as client:
+            response = await client.post(
+                f"{EMBEDDING_API_URL}/embedding_search",
+                json={"query": query, "limit": search_query.limit},
+            )
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="Image search timed out") from exc
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=503, detail="Image search is unavailable") from exc
+
+    if response.status_code == 503:
+        raise HTTPException(status_code=503, detail="Image search is unavailable")
+    if not response.is_success:
+        raise HTTPException(status_code=502, detail="Image search returned an error")
+    try:
+        return semantic_results.validate_json(response.content)
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail="Invalid image search response") from exc
+
 
 @app.post("/direct_search")
 async def direct_search(search_query: SearchQuery) -> List[SearchResult]:
