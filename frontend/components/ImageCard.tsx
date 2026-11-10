@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { getImageUrl } from '../services/api';
 
 const imageCache = new Map<string, string>();
 
@@ -30,7 +31,7 @@ interface ImageCardProps {
 }
 
 const ImageCard: React.FC<ImageCardProps> = ({ imageId, onSelect, index }) => {
-  const imageUrl = `https://muyaho-api.yuntae.in/img?id=${imageId}`;
+  const imageUrl = getImageUrl(imageId);
   const [displayUrl, setDisplayUrl] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 

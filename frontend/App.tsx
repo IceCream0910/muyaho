@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import SearchInput from './components/SearchInput';
 import ImageGrid from './components/ImageGrid';
 import Loader from './components/Loader';
 import ImageModal from './components/ImageModal';
 import ThemeToggle from './components/ThemeToggle';
-import { fetchImagesByKeyword, fetchAllImageIds } from './services/api';
+import { fetchAllImageIds, fetchSearchResults } from './services/api';
 import { ImageSearchResult } from './types';
 
 const IMAGES_PER_PAGE = 20;
@@ -37,23 +37,6 @@ const App: React.FC = () => {
     }
   });
 
-  const [isEnhancedSearch, setIsEnhancedSearch] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('isEnhancedSearch') === 'true';
-    } catch (e) {
-      console.error('Failed to read enhanced search state from localStorage', e);
-      return false;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('isEnhancedSearch', String(isEnhancedSearch));
-    } catch (e) {
-      console.error('Failed to save enhanced search state to localStorage', e);
-    }
-  }, [isEnhancedSearch]);
-
   const [allImageIds, setAllImageIds] = useState<string[]>([]);
   const [shuffledAllImageIds, setShuffledAllImageIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
@@ -71,12 +54,7 @@ const App: React.FC = () => {
     setShuffledAllImageIds(shuffle(allImageIds));
   }, [allImageIds]);
 
-  const displayedImages = useMemo(() => {
-    if (isShuffled && hasSearched) {
-      return shuffle(originalImageResults);
-    }
-    return originalImageResults;
-  }, [originalImageResults, isShuffled, hasSearched]);
+  const displayedImages = originalImageResults;
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -190,55 +168,14 @@ const App: React.FC = () => {
     }
 
     try {
-      let allImages: ImageSearchResult[] = [];
-
-      if (isEnhancedSearch) {
-        // Enhanced Search: Fetch related keywords and search for all
-        let relatedKeywords: string[] = [];
-        try {
-          const keywordData = await import('./services/api').then(m => m.fetchKeywords(query));
-          relatedKeywords = keywordData.related_keywords || [];
-        } catch (e) {
-          console.warn('Failed to fetch related keywords, falling back to basic search', e);
-        }
-
-        const searchQueries = [query, ...relatedKeywords];
-        console.log('Enhanced search queries:', searchQueries);
-
-        const results = await Promise.all(
-          searchQueries.map(q =>
-            import('./services/api').then(m => m.fetchImagesByKeyword(q))
-              .catch(e => {
-                console.warn(`Failed to search for keyword: ${q}`, e);
-                return [];
-              })
-          )
-        );
-        allImages = results.flat();
-
-      } else {
-        // Basic Search
-        allImages = await fetchImagesByKeyword(query);
-      }
-
-      const uniqueImages = new Map<string, ImageSearchResult>();
-      allImages.forEach(image => {
-        const existing = uniqueImages.get(image.image_id);
-        if (!existing || image.score > existing.score) {
-          uniqueImages.set(image.image_id, image);
-        }
-      });
-
-      const sortedImages = Array.from(uniqueImages.values()).sort((a, b) => b.score - a.score);
-      setOriginalImageResults(sortedImages);
-
+      setOriginalImageResults(await fetchSearchResults(query));
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
-  }, [isEnhancedSearch]);
+  }, []);
 
   const reset = useCallback(() => {
     if (isLoading) return;
@@ -254,7 +191,7 @@ const App: React.FC = () => {
         <div className="flex flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400 mt-12 h-96">
           <img className="w-auto h-48 object-cover rounded-lg" src="https://i.pinimg.com/736x/47/7e/d6/477ed6f6b6ea6cee5a76f3ed2dae4fa4.jpg" alt="기다려주세요 짤" />
           <p className="text-gray-500 dark:text-gray-400 mt-4">
-            {hasSearched ? (isEnhancedSearch ? 'AI가 연관 검색어까지 샅샅이 뒤지는 중...' : 'AI가 열심히 무도 정주행 중...') : '무도짤 수집 중...'}
+            {hasSearched ? 'AI가 열심히 무도 정주행 중...' : '무도짤 수집 중...'}
           </p>
         </div>
       );
@@ -293,7 +230,7 @@ const App: React.FC = () => {
           <header className="flex justify-between items-center">
             <img onClick={reset} className="w-24 h-24 object-cover rounded-lg cursor-pointer" src="/favicon.png" alt="무야호 짤" />
             <div className="flex items-center gap-2">
-              <button
+              {!hasSearched && <button
                 onClick={() => setIsShuffled(prev => !prev)}
                 className={`h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full transition-colors ${isShuffled ? 'bg-indigo-500 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-black/10 dark:hover:bg-white/10'}`}
                 aria-label="Toggle image shuffle"
@@ -303,7 +240,7 @@ const App: React.FC = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L20 4M21 16v5h-5M4 4l5 5" />
                 </svg>
-              </button>
+              </button>}
               <ThemeToggle />
             </div>
           </header>
@@ -332,8 +269,6 @@ const App: React.FC = () => {
             onQueryChange={setSearchQuery}
             onSearch={performSearch}
             isLoading={isLoading}
-            isEnhancedSearch={isEnhancedSearch}
-            onEnhancedSearchChange={setIsEnhancedSearch}
           />
         </div>
       </div>

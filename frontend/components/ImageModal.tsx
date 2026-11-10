@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getImageUrl } from '../services/api';
 
 interface ImageModalProps {
   imageId: string;
@@ -32,7 +33,7 @@ const variants = {
 const ImageModal: React.FC<ImageModalProps> = ({ imageId, onClose, onNext, onPrev }) => {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'success'>('idle');
   const [[page, direction], setPage] = useState([0, 0]);
-  const imageUrl = `https://muyaho-api.yuntae.in/img?id=${imageId}`;
+  const imageUrl = getImageUrl(imageId);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

@@ -6,8 +6,6 @@ interface SearchInputProps {
   onQueryChange: (query: string) => void;
   onSearch: (query: string) => void;
   isLoading: boolean;
-  isEnhancedSearch: boolean;
-  onEnhancedSearchChange: (isEnhanced: boolean) => void;
 }
 
 const placeholders = [
@@ -20,11 +18,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
   onQueryChange,
   onSearch,
   isLoading,
-  isEnhancedSearch,
-  onEnhancedSearchChange
 }) => {
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -44,31 +39,15 @@ const SearchInput: React.FC<SearchInputProps> = ({
   return (
     <form onSubmit={handleSubmit} className="w-full flex-grow">
       <div className="relative flex items-center">
-        <AnimatePresence>
-          {showTooltip && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="absolute bottom-full left-1 right-0 mb-4 p-3 bg-gray-900/90 dark:bg-white/90 text-white dark:text-gray-900 text-sm rounded-2xl shadow-xl backdrop-blur-xl z-50 pointer-events-none"
-            >
-              <p>
-                <span className="text-yellow-400 dark:text-yellow-600 font-bold mr-1">✨ AI 모드:</span>
-                맥락을 파악해 더 많은 짤을 찾아줄게요.
-              </p>
-              <div className="absolute -bottom-1 right-[64px] w-3 h-3 bg-gray-900/90 dark:bg-white/90 rotate-45"></div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <input
           type="text"
+          aria-label="짤 검색어"
           value={query}
+          maxLength={500}
           onChange={(e) => onQueryChange(e.target.value)}
           placeholder=""
           disabled={isLoading}
-          className="w-full pl-5 pr-24 py-3 text-base bg-transparent text-gray-900 dark:text-white focus:outline-none relative z-10"
+          className="w-full pl-5 pr-12 py-3 text-base bg-transparent text-gray-900 dark:text-white focus:outline-none relative z-10"
         />
 
         {!query && (
@@ -89,21 +68,6 @@ const SearchInput: React.FC<SearchInputProps> = ({
         )}
 
         <div className="absolute top-1/2 -translate-y-1/2 right-2 flex items-center gap-1 z-20">
-          <button
-            type="button"
-            onClick={() => onEnhancedSearchChange(!isEnhancedSearch)}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-            className={`flex items-center justify-center h-8 w-8 rounded-full transition-colors ${isEnhancedSearch
-              ? 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30'
-              : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-              }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 ml-1.5">
-              <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813a3.75 3.75 0 002.576-2.576l.813-2.846A.75.75 0 019 4.5z" clipRule="evenodd" />
-            </svg>
-          </button>
-
           <button
             type="submit"
             disabled={isLoading}
